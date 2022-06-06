@@ -18,63 +18,90 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*
- * Note: You are permitted, and even encouraged, to add other
- * support functions in order to reduce duplication of code, or
- * to increase the clarity of your solution, or both.
- */
-
-void print_lines(FILE *fp, int *lines, int lines_len) {
-    if (!lines_len)
-        return;
-    char buffer[256];
-    int line = 0;
-    int printed = 0;
-    while (fgets(buffer, 256, fp) != NULL) {
-        for (int i = 0; i<lines_len; ++i) {
-            if (lines[i] == line) {
-                printf("%s", buffer);
-                printed++;
-            }
-        }
-        line++;
+void print_line(char *path, int line, char *prefix) {
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL) {
+        printf("Error: PID not found.\n");
+        exit(1);
     }
+    char buffer[256];
+    int line_counter = 0;
+    while (fgets(buffer, 256, fp) != NULL && line_counter < line)
+        line_counter++;
+    fclose(fp);
+    printf("%s%s", prefix, buffer);
+}
+
+int read_next_int_from_stream(FILE* fp) {
+    char c = '0';
+    char buffer[256];
+    int buffer_len = 0;
+    char number_found = 0;
+    while ((c = fgetc(fp)) != EOF) {
+        if (c > 47 && c < 58) {
+            buffer[buffer_len++] = c;
+            number_found = 1;
+        } else if (number_found) {
+            buffer[buffer_len++] = '\n';
+            buffer[buffer_len++] = '\0';
+            break;
+        }
+    }
+    return atoi(buffer);
 }
 
 void print_process_info(char * process_num) {
+    printf("Process number: %s\n", process_num);
+    
+    char path[256] = "/proc/";
+    int offset = 6;
+    strcpy(path+offset, process_num);
+    offset += strlen(process_num);
+    
+    // Log process name
+    strcpy(path+offset, "/status");
+    print_line(path, 0, "");
+    
+    // Log process "Filename"
+    strcpy(path+offset, "/comm");
+    print_line(path, 0, "Filename (if any): ");
+    
+    // Log # of threads
+    strcpy(path+offset, "/status");
+    print_line(path, 33, "");
+    
+    // Log total context switches    
+    FILE *uptime = fopen(path, "r"); // uptime
+    char buffer[256];
+    int line_counter = 0;
+    while (fgets(buffer, 256, uptime) != NULL && line_counter < 52)
+        line_counter++;
+    int total = read_next_int_from_stream(uptime) + read_next_int_from_stream(uptime);
+    fclose(uptime);
+    
+    printf("Total context switches: %d\n", total);
+    
     
 } 
 
 
 void print_full_info() {
-    FILE *cpuinfo;
-    FILE *meminfo;
-    FILE *version;
-    FILE *uptime;
-    int lines[2];
-    
-    cpuinfo = fopen("/proc/cpuinfo", "r"); // model name/cpu cores
-    version = fopen("/proc/version", "r"); // linux version
-    meminfo = fopen("/proc/meminfo", "r"); // MemTotal
-    uptime = fopen("/proc/uptime", "r"); // uptime
-    
     // Log model name and cpu cores
-    lines[0] = 4;
-    lines[1] = 12;
-    print_lines(cpuinfo, lines, 2);
+    print_line("/proc/cpuinfo", 4, "");
+    print_line("/proc/cpuinfo", 12, "");
     
     // Log linux version
-    lines[0] = 0;
-    print_lines(version, lines, 1);
+    print_line("/proc/version", 0, "");
     
     // Log MemTotal
-    lines[0] = 0;
-    print_lines(meminfo, lines, 1);
+    print_line("/proc/meminfo", 0, "");
     
     // Log uptime
+    FILE *uptime = fopen("/proc/uptime", "r"); // uptime
     char c = '0';
     char buffer[12];
     int buffer_len = 0;
+    
     while ((c = fgetc(uptime)) != EOF) {
         if (c != '.') {
             buffer[buffer_len++] = c;
@@ -84,20 +111,17 @@ void print_full_info() {
             break;
         }
     }
+    fclose(uptime);
     int seconds = atoi(buffer);
+    
     int days = seconds/86400;
     seconds %= 86400;
     int hours = seconds/3600;
     seconds %= 3600;
     int minutes = seconds/60;
     seconds %= 60;
-    printf("Updtime: %d days, %d hours, %d minutes, %d seconds\n", days, hours, minutes, seconds);
     
-    // Close files
-    fclose(cpuinfo);
-    fclose(version);
-    fclose(meminfo);
-    fclose(uptime);
+    printf("Uptime: %d days, %d hours, %d minutes, %d seconds\n", days, hours, minutes, seconds);
 }
 
 
