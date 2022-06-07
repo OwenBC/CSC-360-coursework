@@ -20,13 +20,16 @@
 #include <stdlib.h>
 #include <wait.h>
 
-#include <stdio.h> // TODO: remember to delete this when done debugging
-
 #define MAX_NUM_COMMANDS 4
 #define MAX_INPUT_LINE 80
 #define MAX_NUM_TOKENS 8
 
-int tokenize(char *input, char **token_array) {
+// max int function https://codeforwin.org/2016/02/c-program-to-find-maximum-and-minimum-using-functions.html
+int max(int num1, int num2) {
+    return (num1 > num2 ) ? num1 : num2;
+}
+
+void tokenize(char *input, char **token_array) {
     int num_tokens;
     char *t;
     
@@ -36,13 +39,12 @@ int tokenize(char *input, char **token_array) {
         token_array[num_tokens++] = t;
         t = strtok(NULL, " ");
     }
-    return num_tokens;
+    token_array[num_tokens] = 0;
 }
 
 int main() {
     // Input
-    char *commands[MAX_NUM_COMMANDS][MAX_NUM_TOKENS];
-    int num_arguments[MAX_NUM_COMMANDS];
+    char *commands[MAX_NUM_COMMANDS][MAX_NUM_TOKENS+1];
     int commands_len = 0;
     char *input;
     char *to_free[MAX_NUM_COMMANDS + 1];
@@ -57,21 +59,51 @@ int main() {
         if (bytes_read != 1) {
             if (input[strlen(input) - 1] == '\n')
                 input[strlen(input) - 1] = '\0';
-            num_arguments[commands_len] = tokenize(input, commands[commands_len]);
+            tokenize(input, commands[commands_len]);
             commands_len++;
         }
     } while (commands_len < MAX_NUM_COMMANDS && bytes_read != 1);
     
+    // Setup piping
+    char *envp[] = { 0 };
+    int pid[commands_len];
+    int fd[max(0, commands_len-1)][2];
+    int status;
+    
+    for (int i = 0; i<commands_len-1; i++)
+        pipe(fd[i]);
+    
     for (int i = 0; i<commands_len; i++) {
-        for (int j = 0; j<num_arguments[i]; j++) {
-            printf("%s", commands[i][j]);
+        if ((pid[i] = fork()) == 0) {
+            for (int j = 0; j<commands_len-1; j++) {
+                // Read end, connect if j = i-1
+                if (j == i - 1) {
+                    dup2(fd[j][0], 0);
+                }else{
+                    close(fd[j][0]);
+                }
+                // Write end, connect if j = i
+                if (j == i){
+                    dup2(fd[j][1], 1);
+                }else{
+                    close(fd[j][1]);
+                }
+            }
+            execve(commands[i][0], commands[i], envp);
         }
-        printf("\n");
     }
     
-    // Setup piping
+    // Close pipes in parent
+    for (int i = 0; i<commands_len-1; i++) {
+        close(fd[i][0]);
+        close(fd[i][1]);
+    }
     
-    // Execute
+    // Wait for children
+    for (int i = 0; i<commands_len; i++)
+        waitpid(pid[i], &status, 0);
+    
+    // Free memory
     for (int i = 0; i<commands_len; i++)
         free(to_free[i]);
 }
