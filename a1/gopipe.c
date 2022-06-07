@@ -104,6 +104,6 @@ int main() {
         waitpid(pid[i], &status, 0);
     
     // Free memory
-    for (int i = 0; i<commands_len; i++)
+    for (int i = 0; i<to_free_len; i++)
         free(to_free[i]);
 }
