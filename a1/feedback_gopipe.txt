@@ -1,0 +1,61 @@
+gopipe.c can be compiled with the gcc command given in the assignment writeup: PASS
+
+If Enter is pressed (no commands are entered), the program immediately exits: PASS
+
+One command: if the following command is entered:  
+/usr/bin/gcc --version
+
+The output is:
+gcc (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+Copyright (C) 2019 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+PASS
+
+Two commands: if the following commands are entered:  
+/usr/bin/gcc --version
+/usr/bin/head -1
+
+The output is:
+gcc (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+
+PASS
+
+Three commands: if the following commands are entered: 
+
+/usr/bin/gcc --version
+/usr/bin/head -1
+/usr/bin/tail -c 6
+
+The output is:
+9.3.0
+
+PASS
+
+Four commands: if the following commands are entered:
+
+/usr/bin/gcc --version
+/usr/bin/head -1
+/usr/bin/tail -c 6
+/usr/bin/rev
+No fifth command is accepted, and the output is:
+0.3.9
+
+PASS
+
+Any dynamic memory used is cleaned up properly: PASS
+
+Your code will also be inspected for organization, structure and helpful comments:
+
+Your code does not use any functions from the stdio.h library: PASS
+Your code contains comments explaining its functioning: PASS
+Your code is organized into short functions, each accomplishing a discrete task: PASS
+Your code is structured to avoid unnecessary repetition: PASS
+
+Excellent work.  The only thing you could have done to improve your code would have been
+to move some of the string handling and other infrastructure out of main() to their own
+functions.  But otherwise your code is very well written, concise and easy to follow.
+Great job!
+
+Grade for gopipe.c: A

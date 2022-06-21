@@ -1,0 +1,30 @@
+getstats.c can be compiled with the gcc command given in the assignment writeup: PASS
+
+When run with no arguments:
+    - The CPU model name is shown:      PASS
+    - The number of CPU cores is shown: PASS
+    - The linux version is displayed:   PASS
+    - The total memory is shown:        PASS
+    - The Uptime is displayed in days, hours, minutes and seconds: PASS
+
+When run with a process number argument for a valid process:
+    - The process number is shown:      PASS
+    - The name of the process is shown: PASS
+    - The filename (if any is shown):   PASS
+    - The number of threads is shown:   PASS
+    - The total context switches count is shown: PASS
+
+When run with an argument not corresponding to any running process,
+    an error message is displayed: PASS
+All open file handles are closed before your program terminates: PASS
+Any dynamic memory used is cleaned up properly: PASS
+
+Your code will also be inspected for organization, structure and helpful comments:
+
+Your code contains comments explaining its functioning: PASS
+Your code is organized into short functions, each accomplishing a discrete task: PASS
+Your code is structured to avoid unnecessary repetition: PASS
+
+Great job.
+
+Grade for getstats.c: A+
