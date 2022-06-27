@@ -156,7 +156,6 @@ int num_free_h;
 int combining_c1;
 int combining_c2;
 int combining_h;
-char combiner[MAX_ATOM_NAME_LEN];
 
 sem_t mutex;
 sem_t wait_c;
@@ -169,7 +168,13 @@ sem_t staging_area;
  */
 
 void kosmos_init() {
-
+    radicals = 0;
+    num_free_c = 0;
+    num_free_h = 0;
+    sem_init(&mutex, 0, 1);
+    sem_init(&wait_c, 0, 0);
+    sem_init(&wait_h, 0, 0);
+    sem_init(&staging_area, 0, 1);
 }
 
 
@@ -183,6 +188,34 @@ void *h_ready( void *arg )
 #ifdef VERBOSE
 	printf("%s now exists\n", name);
 #endif
+    
+    sem_wait(&mutex);
+    if (num_free_c > 1) {
+        num_free_c -= 2;
+        sem_post(&mutex);
+        sem_wait(&staging_area);
+        combining_c1 = -1;
+        combining_c2 = -1;
+
+        sem_post(&wait_c);
+        while(combining_c1 == -1){}
+        sem_post(&wait_c);
+        while(combining_c2 == -1){}
+        
+        
+        #ifdef VERBOSE
+            fprintf(stdout, "A ethynyl radical was made: c%03d  c%03d  h%03d\n",
+                combining_c1, combining_c2, id);
+        #endif
+        
+        kosmos_log_add_entry(++radicals, combining_c1, combining_c2, id, name);
+        sem_post(&staging_area);
+    } else {
+        num_free_h++;
+        sem_post(&mutex);
+        sem_wait(&wait_h);
+        combining_h = id;
+    }
 
 	return NULL;
 }
@@ -198,30 +231,46 @@ void *c_ready( void *arg )
 #ifdef VERBOSE
 	printf("%s now exists\n", name);
 #endif
-	
+    
+    sem_wait(&mutex);
+    if (++num_free_c > 1 && num_free_h > 0) {
+        num_free_c -= 2;
+        num_free_h--;
+        sem_wait(&staging_area);
+        sem_post(&mutex);
+        combining_c1 = -1;
+        combining_h = -1;
+
+        sem_post(&wait_h);
+        while(combining_h == -1){}
+        sem_post(&wait_c);
+        while(combining_c1 == -1){}
+        
+        #ifdef VERBOSE
+            fprintf(stdout, "A ethynyl radical was made: c%03d  c%03d  h%03d\n",
+                combining_c1, id, combining_h);
+        #endif
+        
+        kosmos_log_add_entry(++radicals, combining_c1, id, combining_h, name);
+        sem_post(&staging_area);
+    } else {
+        sem_post(&mutex);
+        sem_wait(&wait_c);
+        if (combining_c1 == -1) {combining_c1 = id;}
+        else {combining_c2 = id;}
+    }
+    
 	return NULL;
 }
 
 
-/* 
- * Note: The function below need not be used, as the code for making radicals
- * could be located within h_ready and c_ready. However, it is perfectly
- * possible that you have a solution which depends on such a function
- * having a purpose as intended by the function's name.
- */
-void make_radical(int c1, int c2, int h, char *maker)
-{
-#ifdef VERBOSE
-	fprintf(stdout, "A ethynyl radical was made: c%03d  c%03d  h%03d\n",
-		c1, c2, h);
-#endif
-    kosmos_log_add_entry(radicals, c1, c2, h, maker);
-}
-
-
 void wait_to_terminate(int expected_num_radicals) {
-    /* A rather lazy way of doing it, for now. */
-    sleep(MAX_KOSMOS_SECONDS);
+    while (radicals != expected_num_radicals){}
+    sem_wait(&staging_area);
     kosmos_log_dump();
+    sem_destroy(&mutex);
+    sem_destroy(&wait_h);
+    sem_destroy(&wait_c);
+    sem_destroy(&staging_area);
     exit(0);
 }

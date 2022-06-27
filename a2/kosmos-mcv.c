@@ -145,7 +145,20 @@ int main(int argc, char *argv[])
 /* 
  * DECLARE / DEFINE NEEDED VARIABLES IMMEDIATELY BELOW.
  */
+int radicals;
+int num_free_c;
+int num_free_h;
 
+int combining_c;
+int combining_h;
+
+pthread_mutex_t count_mutex;
+pthread_mutex_t combining_mutex;
+pthread_mutex_t staging_area;
+pthread_cond_t wait_h;
+pthread_cond_t wait_c;
+pthread_cond_t conf_h;
+pthread_cond_t conf_c;
 
 
 /*
@@ -153,6 +166,11 @@ int main(int argc, char *argv[])
  */
 
 void kosmos_init() {
+    num_free_c = 0;
+    num_free_h = 0;
+    combining_c = 0;
+    combining_h = 0;
+    
 }
 
 
@@ -166,6 +184,48 @@ void *h_ready( void *arg )
 #ifdef VERBOSE
 	printf("%s now exists\n", name);
 #endif
+    
+    pthread_mutex_lock(&count_mutex);
+    if (num_free_c > 1) {
+        num_free_c -= 2;
+        pthread_mutex_lock(&staging_area);
+        pthread_mutex_unlock(&count_mutex);
+        
+        pthread_mutex_lock(&combining_mutex);
+        combining_c = -1;
+        pthread_mutex_unlock(&combining_mutex);
+        
+        pthread_cond_signal(&wait_c);
+        
+        pthread_mutex_lock(&combining_mutex);
+        while(combining_c == -1) {pthread_cond_wait(&conf_c, &combining_mutex);}
+        int c1 = combining_c;
+        combining_c = -1;
+        pthread_mutex_unlock(&combining_mutex);
+        
+        pthread_cond_signal(&wait_c);
+        
+        pthread_mutex_lock(&combining_mutex);
+        while(combining_c == -1) {pthread_cond_wait(&conf_c, &combining_mutex);}
+        int c2 = combining_c;
+        pthread_mutex_unlock(&combining_mutex);
+        
+        #ifdef VERBOSE
+            fprintf(stdout, "A ethynyl radical was made: c%03d  c%03d  h%03d\n",
+                c1, c2, id);
+        #endif
+        
+        kosmos_log_add_entry(++radicals, c1, c2, id, name);
+        pthread_mutex_unlock(&staging_area);
+    } else {
+        num_free_h++;
+        pthread_mutex_unlock(&count_mutex);
+        pthread_mutex_lock(&combining_mutex);
+        while (combining_h != -1) {pthread_cond_wait(&wait_h, &combining_mutex);}
+        combining_h = id;
+        pthread_mutex_unlock(&combining_mutex);
+        pthread_cond_signal(&conf_h);        
+    }
 
 	return NULL;
 }
@@ -182,13 +242,54 @@ void *c_ready( void *arg )
 	printf("%s now exists\n", name);
 #endif
 
+    pthread_mutex_lock(&count_mutex);
+    if (num_free_c > 0 && num_free_h > 0) {
+        num_free_c--;
+        num_free_h--;
+        pthread_mutex_lock(&staging_area);
+        pthread_mutex_unlock(&count_mutex);
+        
+        pthread_mutex_lock(&combining_mutex);
+        combining_c = -1;
+        combining_h = -1;
+        pthread_mutex_unlock(&combining_mutex);
+        
+        pthread_cond_signal(&wait_h);
+        pthread_cond_signal(&wait_c);        
+        
+        pthread_mutex_lock(&combining_mutex);
+        while(combining_h == -1) {pthread_cond_wait(&conf_h, &combining_mutex);}
+        int h = combining_h;
+        while(combining_c == -1) {pthread_cond_wait(&conf_c, &combining_mutex);}
+        int c1 = combining_c;
+        pthread_mutex_unlock(&combining_mutex);
+        
+        #ifdef VERBOSE
+            fprintf(stdout, "A ethynyl radical was made: c%03d  c%03d  h%03d\n",
+                c1, id, h);
+        #endif
+        
+        kosmos_log_add_entry(++radicals, c1, id, h, name);
+        pthread_mutex_unlock(&staging_area);
+    } else {
+        num_free_c++;        
+        pthread_mutex_unlock(&count_mutex);
+        pthread_mutex_lock(&combining_mutex);
+        while (combining_c != -1) {pthread_cond_wait(&wait_c, &combining_mutex);}
+        combining_c = id;
+        pthread_mutex_unlock(&combining_mutex);
+        pthread_cond_signal(&conf_c);
+    }
+    
 	return NULL;
 }
 
 
 void wait_to_terminate(int expected_num_radicals) {
-    /* A rather lazy way of doing it, but good enough for this assignment. */
-    sleep(MAX_KOSMOS_SECONDS);
+    while (radicals != expected_num_radicals){}
+    pthread_mutex_lock(&staging_area);
+    // sleep(MAX_KOSMOS_SECONDS);
     kosmos_log_dump();
+    
     exit(0);
 }
