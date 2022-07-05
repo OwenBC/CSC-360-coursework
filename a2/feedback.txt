@@ -1,0 +1,33 @@
+kosmos-mcv.c:
+
+kosmos-mcv.c can be compiled using the gcc command in the makefile: PASS
+
+./kosmos-mcv.c 60 60 is executed:
+
+Program runs without crashing: PASS
+Program creates at least one valid radical: PASS
+Program creates several valid radicals: PASS
+Program creates all or nearly all valid radicals: PASS
+
+Code is well written and commented: FAIL
+Code uses mutexes and condition variables properly: PASS
+
+Grade for kosmos-mcv.c: A
+
+kosmos-sem.c can be compiled using the gcc command in the makefile: PASS
+
+./kosmos-sem.c 60 60 is executed:
+
+Program runs without crashing: PASS
+Program creates at least one valid radical: PASS
+Program creates several valid radicals: PASS
+Program creates all or nearly all valid radicals: PASS
+
+Code is well written and commented: FAIL
+Code uses semaphores properly: PASS
+
+Grade for kosmos-sem.c: A
+
+Your code is well-written but comments are absent.
+
+Combined grade: A
