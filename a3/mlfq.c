@@ -75,6 +75,7 @@
 #define MAX_INPUT_LINE 100
 #define MAX_TASKS 10
 #define BOOST_INTERVAL 25
+#define min(x,y) (x>y?y:x)
 const int QUEUE_TIME_QUANTUMS[] = { 2, 4, 8 };
 
 
@@ -204,10 +205,13 @@ void handle_instruction(Instruction_t *instruction, int tick) {
 	
 	if(instruction->burst_time == 0) { 
 		// New Task Arrival
-		// TODO ... Insert your Code Here
-		
-
-
+        Task_t *task = &task_table[task_id];
+        
+        task->id = task_id;
+        task->current_queue = 1;
+        task->total_wait_time = 0;
+        task->total_execution_time = 0;
+        task->next = NULL;
 
 		printf("[%05d] id=%04d NEW\n", tick, task_id);
 	
@@ -216,24 +220,20 @@ void handle_instruction(Instruction_t *instruction, int tick) {
 		int waiting_time;
 		int turn_around_time;
 
-		// TODO ... Insert your Code Here
-
-
-
-
-
+        Task_t *task = &task_table[task_id];
+		waiting_time = task->total_wait_time;
+        turn_around_time = task->total_execution_time;
 		
 		printf("[%05d] id=%04d EXIT wt=%d tat=%d\n", tick, task_id, 
 			waiting_time, turn_around_time);
 
 	} else {
 		// CPU Burst for the task
-		// TODO ... Insert your Code Here
-
-
-
-
-
+        Task_t *task = &task_table[task_id];
+        task->burst_time = instruction->burst_time;
+        task->remaining_burst_time = instruction->burst_time;
+        
+        enqueue(get_queue_by_id(task->current_queue), task);
 	}
 }
 
@@ -246,10 +246,12 @@ void handle_instruction(Instruction_t *instruction, int tick) {
  *  Does NOT dequeue the task.
  */
 Task_t *peek_priority_task() {
-	// TODO ... Insert your Code Here
-
-
-
+	if (!is_empty(queue_1))
+        return queue_1->start;
+	if (!is_empty(queue_2))
+        return queue_2->start;
+	if (!is_empty(queue_3))
+        return queue_3->start;
 
 	return NULL;
 }
@@ -280,12 +282,24 @@ void decrease_task_level(Task_t *task) {
 void boost(int tick) {
 	
 	if (tick % BOOST_INTERVAL != 0) return;
+    
+    // Handle current task
+    if (current_task) {
+        current_task->current_queue = 1;
+        remaining_quantum = min(remaining_quantum, 2);
+    }
 	
 	// Conduct boost
-  	// TODO - Insert your code here
-
-
-
+    Task_t *task;
+	for (int i = 3; i > 1; i--) {
+        task = dequeue(get_queue_by_id(i));
+        while (task) {
+            task->current_queue = 1;
+            enqueue(queue_1, task);
+            task = dequeue(get_queue_by_id(i));
+        }
+    }
+    
 	  
 	printf("[%05d] BOOST\n", tick);
 }
@@ -305,11 +319,26 @@ void boost(int tick) {
  */
 void scheduler() {
 	Task_t *priority_task = peek_priority_task();
+    
+    if (priority_task) {
+        int queue = priority_task->current_queue;
+    
+        // If current task exists
+        if (current_task && current_task->current_queue > queue) {
+            // Preemption: enqueue current task...
+            enqueue(get_queue_by_id(current_task->current_queue), current_task);
 
-	// TODO ... Insert your Code Here
-
-
-
+            // ...and enqueue the new one 
+            current_task = dequeue(get_queue_by_id(queue));
+            remaining_quantum = min(QUEUE_TIME_QUANTUMS[queue - 1],
+                                    current_task->remaining_burst_time);
+        } else if (current_task == NULL) {
+            // Schedule new task
+            current_task = dequeue(get_queue_by_id(queue));
+            remaining_quantum = min(QUEUE_TIME_QUANTUMS[queue - 1],
+                                    current_task->remaining_burst_time);
+        }
+    }
 }
 
 
@@ -325,11 +354,8 @@ void scheduler() {
  */
 void execute_task(int tick) {
 	if(current_task != NULL) {
-		// TODO ... Insert your Code Here
-
-
-
-
+        current_task->remaining_burst_time--;
+        remaining_quantum--;
 
 		printf("[%05d] id=%04d req=%d used=%d queue=%d\n", tick, 
 			current_task->id, current_task->burst_time, 
@@ -338,7 +364,11 @@ void execute_task(int tick) {
 		
 		if(current_task->remaining_burst_time == 0) {
 			current_task = NULL;
-		}
+		} else if (remaining_quantum == 0) {
+            decrease_task_level(current_task);
+            enqueue(get_queue_by_id(current_task->current_queue), current_task);
+            current_task = NULL;
+        }
 
 	} else {
 		printf("[%05d] IDLE\n", tick);
@@ -356,14 +386,20 @@ void execute_task(int tick) {
  *	turnaround time.
  */
 void update_task_metrics() {
-	// TODO ... Insert your Code Here
+    // Update current task
+    if (current_task)
+        current_task->total_execution_time++;
 
-
-
-
-
-
-
+    // Update queued tasks
+    Task_t *task;
+	for (int i = 1; i < 4; i++) {
+        task = get_queue_by_id(i)->start;
+        while (task) {
+            task->total_wait_time++;
+            task->total_execution_time++;
+            task = task->next;
+        }
+    }
 }
 
 
