@@ -246,12 +246,11 @@ void handle_instruction(Instruction_t *instruction, int tick) {
  *  Does NOT dequeue the task.
  */
 Task_t *peek_priority_task() {
-	if (!is_empty(queue_1))
-        return queue_1->start;
-	if (!is_empty(queue_2))
-        return queue_2->start;
-	if (!is_empty(queue_3))
-        return queue_3->start;
+    // Return head of first non-empty queue
+    for (int i = 1; i < 4; i++) {
+        if (!is_empty(get_queue_by_id(i)))
+            return get_queue_by_id(i)->start;
+    }
 
 	return NULL;
 }
@@ -354,6 +353,7 @@ void scheduler() {
  */
 void execute_task(int tick) {
 	if(current_task != NULL) {
+        // Update remaining times
         current_task->remaining_burst_time--;
         remaining_quantum--;
 
@@ -362,9 +362,11 @@ void execute_task(int tick) {
 			(current_task->burst_time - current_task->remaining_burst_time), 
 			current_task->current_queue);
 		
+        // End task quantum
 		if(current_task->remaining_burst_time == 0) {
 			current_task = NULL;
 		} else if (remaining_quantum == 0) {
+            // Requeue if remaining burst time
             decrease_task_level(current_task);
             enqueue(get_queue_by_id(current_task->current_queue), current_task);
             current_task = NULL;
