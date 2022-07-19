@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     // Open file
     f = fopen(imagename, "r");
     if (f == NULL) {
-        fprintf(stderr, "file does not exist.\n");
+        fprintf(stderr, "image does not exist.\n");
         exit(1);
     }
     
@@ -60,8 +60,6 @@ int main(int argc, char *argv[]) {
         fat_data = ntohl(fat_data);
     }
     
-    fclose(f);
-    
     // Output
     char *line = "-------------------------------------------------\n";
     printf("%s (%s)\n\n%s", sb.magic, basename(imagename), line);
@@ -73,5 +71,8 @@ int main(int argc, char *argv[]) {
            Resv, 
            Alloc);
 
+    // Close the file
+    fclose(f);
+    
     return 0; 
 }

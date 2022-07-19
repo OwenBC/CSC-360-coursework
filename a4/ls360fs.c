@@ -41,6 +41,12 @@ void unpack_datetime(unsigned char *time, short *year, short *month,
     *second = (unsigned short)(time[6]);
 }
 
+void printlisting(int file_size, unsigned char *time, char *filename) {
+    short year, month, day, hour, minute, second;
+    unpack_datetime( time, &year, &month, &day, &hour, &minute, &second);
+    printf("%8d %d-%s-%d %2d:%2d:%2d %s\n", file_size, year, month_to_string(month), 
+           day, hour, minute, second, filename);
+}
 
 int main(int argc, char *argv[]) {
     superblock_entry_t sb;
@@ -60,6 +66,32 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "usage: ls360fs --image <imagename>\n");
         exit(1);
     }
+    
+    // Open file
+    f = fopen(imagename, "r");
+    if (f == NULL) {
+        fprintf(stderr, "image does not exist.\n");
+        exit(1);
+    }
+    
+    // Set superblock
+    fread(&sb, sizeof(superblock_entry_t), 1, f);
+    
+    // Goto DIR block
+    fseek(f, ntohl(sb.dir_start)*ntohs(sb.block_size), SEEK_SET);
+    
+    // Read DIR blocks
+    directory_entry_t de;
+    for (i = 0; i < ntohl(sb.dir_blocks)*(ntohs(sb.block_size)/64); i++) {
+        fread(&de, sizeof(directory_entry_t), 1, f);
+        
+        if (de.status == DIR_ENTRY_NORMALFILE) {
+            printlisting(ntohl(de.file_size), de.modify_time, de.filename);
+        }
+    }
+    
+    // Close the file
+    fclose(f);
 
     return 0; 
 }
