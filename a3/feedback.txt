@@ -1,0 +1,17 @@
+Assignment 3 feedback for ocrewe
+
+Test 1: actual output matches expected output: PASS
+Test 2: actual output matches expected output: PASS
+Test 3: actual output matches expected output: PASS
+Test 4: actual output matches expected output: PASS
+Test 5: actual output matches expected output: PASS
+Test 6: actual output matches expected output: PASS
+Test 7: actual output matches expected output: PASS
+Test 8: actual output matches expected output: PASS
+
+
+Manual inspection:  Code is well formatted and commented:  PASS
+
+Well-written with good code structure and comments.
+
+Grade: A+
