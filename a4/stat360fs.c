@@ -5,6 +5,18 @@
 #include <string.h>
 #include "disk.h"
 
+void *emalloc(size_t n) {
+    void *p;
+
+    p = malloc(n);
+    if (p == NULL) {
+        fprintf(stderr, "malloc of %zu bytes failed", n);
+        exit(1);
+    }
+
+    return p;
+}
+
 char *basename(char *path) {
     char *base = NULL;
     char *cur = strchr(path, '/');
@@ -20,8 +32,8 @@ int main(int argc, char *argv[]) {
     superblock_entry_t sb;
     int  i;
     char *imagename = NULL;
-    FILE  *f;
-    int   fat_data;
+    FILE *f;
+    int  *fat_data;
 
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--image") == 0 && i+1 < argc) {
@@ -36,7 +48,7 @@ int main(int argc, char *argv[]) {
     }
     
     // Open file
-    f = fopen(imagename, "r");
+    f = fopen(imagename, "rb");
     if (f == NULL) {
         fprintf(stderr, "image does not exist.\n");
         exit(1);
@@ -51,13 +63,12 @@ int main(int argc, char *argv[]) {
     
     fseek(f, ntohl(sb.fat_start)*ntohs(sb.block_size), SEEK_SET);
     
-    fread(&fat_data, 4, 1, f);
-    fat_data = ntohl(fat_data);
-    while (fat_data != 0) {
-        if (fat_data == 1) Resv++;
-        else Alloc++;
-        fread(&fat_data, 4, 1, f);
-        fat_data = ntohl(fat_data);
+    int fat_entries = ntohl(sb.fat_blocks)*(ntohs(sb.block_size)/SIZE_FAT_ENTRY);
+    fat_data = emalloc(fat_entries*4);
+    fread(fat_data, SIZE_FAT_ENTRY, fat_entries, f);
+    for (i = 0; i < fat_entries; i++){
+        if (ntohl(fat_data[i]) == FAT_RESERVED) Resv++;
+        else if (fat_data[i] != FAT_AVAILABLE) Alloc++;
     }
     
     // Output
