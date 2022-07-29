@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     }
     
     // Open file
-    f = fopen(imagename, "r");
+    f = fopen(imagename, "rb");
     if (f == NULL) {
         fprintf(stderr, "image does not exist.\n");
         exit(1);

@@ -9,10 +9,11 @@
 
 int main(int argc, char *argv[]) {
     superblock_entry_t sb;
-    int  i;
+    int  i, ii, iii;
     char *imagename = NULL;
     char *filename  = NULL;
     FILE *f;
+    int   fat_data;
 
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--image") == 0 && i+1 < argc) {
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]) {
     }
     
     // Open file
-    f = fopen(imagename, "r");
+    f = fopen(imagename, "rb");
     if (f == NULL) {
         fprintf(stderr, "image does not exist.\n");
         exit(1);
@@ -39,29 +40,46 @@ int main(int argc, char *argv[]) {
     
     // Set superblock
     fread(&sb, sizeof(superblock_entry_t), 1, f);
+    short block_size = ntohs(sb.block_size);
+    int dir_start = ntohl(sb.dir_start);
+    int dir_blocks = ntohl(sb.dir_blocks);
+    int fat_start = ntohl(sb.fat_start);
     
     // Goto DIR block
-    fseek(f, ntohl(sb.dir_start)*ntohs(sb.block_size), SEEK_SET);
+    fseek(f, dir_start*block_size, SEEK_SET);
     
     // Search DIR blocks for filename
     directory_entry_t de;
     char file_found = 0;
-    for (i = 0; i < ntohl(sb.dir_blocks)*(ntohs(sb.block_size)/64); i++) {
+    
+    for (i = 0; i < dir_blocks*(block_size/64); i++) {
         fread(&de, sizeof(directory_entry_t), 1, f);
         
         if (de.status == DIR_ENTRY_NORMALFILE && strcmp(de.filename, filename) == 0) {
+            // If file is found...
             file_found = 1;
-            fseek(f, ntohl(de.start_block)*ntohs(sb.block_size), SEEK_SET);
-            // printf("start block: %d, block size %d\n", ntohl(de.start_block), ntohs(sb.block_size));
-            char file[ntohl(de.file_size)];
-            fread(&file, ntohl(de.file_size), 1, f);
-            printf("%s", file);
+            int start_block = ntohl(de.start_block);
+            int num_blocks = ntohl(de.num_blocks);
+            int data_block = start_block;
+            char byte = 0;
+            
+            for (ii = 0; ii < num_blocks; ii++) { 
+                // Print block
+                fseek(f, data_block*block_size, SEEK_SET);
+                for(iii = 0; iii < (block_size/sizeof(char)); iii++) {
+                    fread(&byte, sizeof(char), 1, f);
+                    printf("%c", byte);
+                }
+                
+                // Find next block
+                fseek(f, (fat_start*block_size)+(data_block*4), SEEK_SET);
+                fread(&fat_data, 4, 1, f);
+                data_block = ntohl(fat_data);
+            }
         }
     }
     
-    if (!file_found) {
-        printf("file not found\n");
-    }
+    if (!file_found) {printf("file not found\n");}
     
     // Close the file
     fclose(f);
