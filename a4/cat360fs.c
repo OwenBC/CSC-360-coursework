@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     directory_entry_t de;
     char file_found = 0;
     
-    for (i = 0; i < dir_blocks*(block_size/64); i++) {
+    for (i = 0; i < MAX_DIR_ENTRIES; i++) {
         fread(&de, sizeof(directory_entry_t), 1, f);
         
         if (de.status == DIR_ENTRY_NORMALFILE && strcmp(de.filename, filename) == 0) {

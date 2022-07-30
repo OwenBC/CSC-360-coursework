@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     
     // Read DIR blocks
     directory_entry_t de;
-    for (i = 0; i < ntohl(sb.dir_blocks)*(ntohs(sb.block_size)/64); i++) {
+    for (i = 0; i < MAX_DIR_ENTRIES; i++) {
         fread(&de, sizeof(directory_entry_t), 1, f);
         
         if (de.status == DIR_ENTRY_NORMALFILE) {
