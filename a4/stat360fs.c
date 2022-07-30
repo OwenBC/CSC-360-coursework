@@ -70,6 +70,7 @@ int main(int argc, char *argv[]) {
         if (ntohl(fat_data[i]) == FAT_RESERVED) Resv++;
         else if (fat_data[i] != FAT_AVAILABLE) Alloc++;
     }
+    free(fat_data);
     
     // Output
     char *line = "-------------------------------------------------\n";
