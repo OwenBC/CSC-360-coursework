@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
     if (imagename == NULL || filename == NULL) {
         fprintf(stderr, "usage: cat360fs --image <imagename> " \
-            "--file <filename in image>");
+            "--file <filename in image>\n");
         exit(1);
     }
     
@@ -42,7 +42,6 @@ int main(int argc, char *argv[]) {
     fread(&sb, sizeof(superblock_entry_t), 1, f);
     short block_size = ntohs(sb.block_size);
     int dir_start = ntohl(sb.dir_start);
-    int dir_blocks = ntohl(sb.dir_blocks);
     int fat_start = ntohl(sb.fat_start);
     
     // Goto DIR block
