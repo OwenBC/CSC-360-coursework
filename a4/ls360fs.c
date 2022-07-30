@@ -44,7 +44,7 @@ void unpack_datetime(unsigned char *time, short *year, short *month,
 void printlisting(int file_size, unsigned char *time, char *filename) {
     short year, month, day, hour, minute, second;
     unpack_datetime( time, &year, &month, &day, &hour, &minute, &second);
-    printf("%8d %d-%s-%d %2d:%2d:%2d %s\n", file_size, year, month_to_string(month), 
+    printf("%8d %d-%s-%02d %2d:%02d:%02d %s\n", file_size, year, month_to_string(month), 
            day, hour, minute, second, filename);
 }
 
