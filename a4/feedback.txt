@@ -1,0 +1,128 @@
+stat360fs:
+
+The following table shows the expected value / your output for the three tested images:
+
+                    disk06.img          disk07.img          disk08.img
+                    ----------          ----------          ----------
+magic string:       360fs / 360fs       360fs / 360fs       360fs / 360fs
+Block size:         256 / 256           256 / 256           512 / 512
+Block count:        5600 / 5600         7200 / 7200         7900 / 7900
+FAT start:          1 / 1               1 / 1               1 / 1
+FAT block count:    88 / 88             113 / 113           62 / 62
+DIR start:          89 / 89             114 / 114           63 / 63
+DIR block count:    16 / 16             16 / 16             8 / 8
+Free blocks:        5495 / 5495         6959 / 6959         5925 / 5925
+Reserved blocks:    89 / 89             114 / 114           63 / 63
+Alloc blocks:       16 / 16             127 / 127           1912 / 1912
+
+Magic string printed:       PASS
+Filename printed:           PASS
+Block size correct:         PASS
+Bock count correct:         PASS
+FAT start correct:          PASS
+FAT block count correct:    PASS
+DIR start correct:          PASS
+DIR block count correct:    PASS
+Free blocks correct:        PASS
+Reserved blocks correct:    PASS
+Alloc blocks correct:       PASS
+Code prints error message if image file not found: PASS
+
+ls360fs:
+
+disk06X.img is empty, so the expected output is nothing (a message to that effect is also fine).
+
+disk07.img expected output (order, formatting and precise datetime not important.  Note the two copies of the
+same file, but with different filenames):
+
+     159 2022-Aug-03 10:28:28 alphabet_short.txt
+    6784 2022-Aug-03 10:28:28 alphabet.txt
+      93 2022-Aug-03 10:28:28 digits_short.txt
+   18228 2022-Aug-03 10:28:28 digits.txt
+    1079 2022-Aug-03 10:28:28 donne1.txt
+    1079 2022-Aug-03 10:28:28 donne2.txt
+
+disk08.img expected output (order, formatting and precise datetime not important.  This is the same as disk05.img,
+but with the order of file store operations modified, and with different fragmentation): 
+
+     700 2022-Aug-03 10:37:03 sonnet116.txt
+  180833 2022-Aug-03 10:37:03 graphic01.jpg
+    1079 2022-Aug-03 10:37:03 donne.txt
+   40743 2022-Aug-03 10:37:03 graphic02.jpg
+  123619 2022-Aug-03 10:37:03 loves_labours_lost.txt
+   90780 2022-Aug-03 10:37:03 graphic03.jpg
+     738 2022-Aug-03 10:37:03 sonnet023.txt
+  103468 2022-Aug-03 10:37:03 macbeth.txt
+  115234 2022-Aug-03 10:37:04 graphic04.jpg
+  314159 2022-Aug-03 10:37:04 random01.bin
+
+File sizes correct: PASS
+File datetimes plausible: PASS
+Filenames printed correctly: PASS
+File listing complete: PASS
+Error message printed if image file doesn't exist: PASS
+
+
+
+cat360fs:
+
+Image file used is disk09.img, which looks like this (numbers in parentheses are block numbers):
+
+     159 2022-Aug-03 15:17:42 alphabet_short1.txt            (71)
+    1079 2022-Aug-03 15:17:42 donne.txt                      (72, 89, 90)
+     159 2022-Aug-03 15:17:42 alphabet_short2.txt            (73)
+      93 2022-Aug-03 15:17:42 digits_short2.txt              (74)
+    6784 2022-Aug-03 15:17:42 alphabet.txt                   (75-88)
+
+Note that due to a deletion, the disk has become slightly fragmented - donne.txt is
+spread among two non-contiguous sections of the data block.
+
+Tests:
+
+File alphabet_short1.txt (a one-block text file) can be read and is identical to the
+version in the originals folder:   FAIL
+
+File alphabet.txt (a multi-block file occupying consecutive blocks) can be read and
+is identical to the version in the originals folder:   FAIL
+
+File donne.txt (a multi-block file occupying disparate blocks) can be read and is 
+identical to the version in the originals folder:  FAIL
+
+Note that if files are not EXACTLY the same length in bytes, they are not identical.
+
+An error message is printed when the image file is not found:  PASS
+An error message is printed when a file within the image file is not found:  PASS
+
+Your output lengths differ from the file lengths above, and are all multiples of 512. I 
+suspect that when you're outputting a file in a block, you're outputting the whole block,
+even if the file only occupies a small part of it.  If a file 4 bytes long occupies a block
+512 bytes in size, the output should be 4 bytes.
+
+stor360fs:
+
+Starting with the empty disk03X.img provided to you with the assignment:
+
+We used your stor360fs to put alphabet_short.txt in the image file.  This is a one-block file.
+
+We then used your stor360fs to put donne.txt in the image file, with the name poem.txt.  This is
+a five-block file.
+
+We printed the directory listing with our ls360fs, and expected something like this - 
+order and formatting don't matter, and the datetime can be different if it still makes sense.
+
+    1079 2022-Aug-04 16:36:41 poem.txt
+     159 2022-Aug-04 16:36:41 alphabet_short.txt
+
+We used our cat360fs to retrieve the two files and print them out.  To qualify as 'identical',
+files must have exactly the same length and the same contents.
+
+alphabet_short.txt appears in the directory listing:  PASS
+donne.txt appears in the directory listing at all:  PASS
+donne.txt appears in the listing correctly named 'poem.txt: PASS
+cat360fs produces an identical alphabet_short.txt: PASS
+cat360fs produces an identical donne.txt: PASS
+stor360fs prints an error message when the image file is not found: PASS
+
+Excellent work!
+
+Overall grade: B
