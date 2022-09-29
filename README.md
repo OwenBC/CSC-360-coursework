@@ -1,3 +1,1 @@
-# coursework
-
-Bare-bones repository.
+Coursework for CSC 360: Operating Systems
